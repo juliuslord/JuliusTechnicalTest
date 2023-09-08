@@ -10,7 +10,7 @@ public class VirtualViewer : MonoBehaviour
     public float distanceMultiplier = 2f; // Multiplier for camera distance based on object scale
     public GameObject spawnPositionObject; // Specify the spawn position GameObject
 
-    private GameObject spawnedObject;
+    private GameObject virtualObject;
     private bool isCameraActive = false;
     private bool objectIsSpawned = false;
 
@@ -32,14 +32,14 @@ public class VirtualViewer : MonoBehaviour
         // Rotate the camera around the spawned object while keeping the same distance
         if (isCameraActive)
         {
-            objectCamera.transform.RotateAround(spawnedObject.transform.position, Vector3.up, rotationSpeed * Time.deltaTime);
-            objectCamera.transform.LookAt(spawnedObject.transform);
+            objectCamera.transform.RotateAround(virtualObject.transform.position, Vector3.up, rotationSpeed * Time.deltaTime);
+            objectCamera.transform.LookAt(virtualObject.transform);
         }
 
         if (playerController.selectedObject != null)
         {
             // Copy the scale from the selected object to the clone object
-            spawnedObject.transform.localScale = playerController.selectedObject.transform.localScale;
+            virtualObject.transform.localScale = playerController.selectedObject.transform.localScale;
         }
     }
 
@@ -49,9 +49,9 @@ public class VirtualViewer : MonoBehaviour
         if (objectIsSpawned)
         {
             // Destroy the old spawned object if it exists
-            if (spawnedObject != null)
+            if (virtualObject != null)
             {
-                Destroy(spawnedObject);
+                Destroy(virtualObject);
             }
 
             // Spawn a copy of the new selected object at the spawn position
@@ -75,21 +75,21 @@ public class VirtualViewer : MonoBehaviour
     private void SpawnLogic()
     {
         // Spawn a copy of the selected object at the spawn position
-        spawnedObject = Instantiate(playerController.selectedObject, spawnPositionObject.transform.position, Quaternion.identity);
-        spawnedObject.SetActive(true); // Ensure the object is active
+        virtualObject = Instantiate(playerController.selectedObject, spawnPositionObject.transform.position, Quaternion.identity);
+        virtualObject.SetActive(true); // Ensure the object is active
 
         // I wanted to remove the outline from the virtual object, so it'd look nice
         // But the real selected object used the same material, so I couldnt edit it
 
         // Disable the Outline script on the spawned object
-        Outline outline = spawnedObject.GetComponent<Outline>();
+        Outline outline = virtualObject.GetComponent<Outline>();
         if (outline != null)
         {
             Destroy(outline);
         }                           // Destorying the outline script wasnt enough, so I removed the outline material
 
         // Remove the third material from the MeshRenderer's materials array (The outline Fill)
-        MeshRenderer meshRenderer = spawnedObject.GetComponent<MeshRenderer>();
+        MeshRenderer meshRenderer = virtualObject.GetComponent<MeshRenderer>();
         if (meshRenderer != null && meshRenderer.materials.Length > 2)
         {
             List<Material> updatedMaterials = new List<Material>(meshRenderer.materials);
@@ -108,7 +108,7 @@ public class VirtualViewer : MonoBehaviour
         objectCamera.transform.position = spawnPositionObject.transform.position + sideOffset;
 
         // Look at the spawned object
-        objectCamera.transform.LookAt(spawnedObject.transform);
+        objectCamera.transform.LookAt(virtualObject.transform);
 
         // Set the camera as active
         isCameraActive = true;

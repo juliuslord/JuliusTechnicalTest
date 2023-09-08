@@ -40,7 +40,6 @@ public class PlayerController : MonoBehaviour
     
     public float objRotationSpeed = 1.0f; // Adjust the rotation speed for larger rotations
 
-    public VirtualViewer virtualViewer;
 
     void Start()
     {
@@ -84,11 +83,15 @@ public class PlayerController : MonoBehaviour
                 break;
         }
 
-        HandleDeletingObjects();
         HandleObjectRotation();
         HandleObjectDrag();
         HandleScrollWheelInput();
-        MenuButtonInput();
+
+        // Disable the selected object when the Delete key is pressed
+        if (Input.GetKeyDown(KeyCode.Delete) && selectedObject != null)
+        {
+            HandleDeletingObjects();
+        }
     }
 
     Vector3 GetMouseWorldPosition()
@@ -186,7 +189,7 @@ public class PlayerController : MonoBehaviour
         // Change to InMenu state and save the current state as previousState
         if (currentState == PlayerState.Walking || currentState == PlayerState.Flying)
         {
-            if (Input.GetKeyDown(KeyCode.F))
+            if (Input.GetKeyDown(KeyCode.Escape))
             {
                 previousState = currentState;
                 currentState = PlayerState.InMenu;
@@ -195,7 +198,7 @@ public class PlayerController : MonoBehaviour
         // Change back to the previous state from InMenu state
         else if (currentState == PlayerState.InMenu)
         {
-            if (Input.GetKeyDown(KeyCode.F))
+            if (Input.GetKeyDown(KeyCode.Escape))
             {
                 currentState = previousState;
             }
@@ -238,13 +241,18 @@ public class PlayerController : MonoBehaviour
                 objectInView = objectHandler.gameObject;
 
                 // Handle E input to select the object
-                if (Input.GetKeyDown(KeyCode.E))
+                if (Input.GetMouseButtonDown(0))
                 {
+                    if (selectedObject != null)
+                    {
+                        selectedObject.GetComponent<ObjectHandler>().DeselectObject();
+                    }
+
                     // Set the selected object to the one the player is looking at
                     selectedObject = objectHandler.gameObject;
                     isDragging = false; // Reset dragging
 
-                    virtualViewer.SpawnObject();    // Set up the virtual viewer for the selected object UI
+                    objectHandler.SelectObject();
 
                     menuController.NewSelectedObject(); // Set the UI selected object text
                 }
@@ -261,19 +269,13 @@ public class PlayerController : MonoBehaviour
         {
             if (outlineObject.gameObject != objectInView && outlineObject.gameObject != selectedObject)
             {
-                outlineObject.enabled = false;
+                outlineObject.GetComponent<ObjectHandler>().NotLookingAtObject();
             }
 
             // Check if the objectInView is not the selected object and has an Outline component
             if (objectInView != null && objectInView != selectedObject)
             {
-                Outline outline = objectInView.GetComponent<Outline>();
-                if (outline != null)
-                {
-                    // Turn on the outline of the object in view
-                    outline.enabled = true;
-                    outline.OutlineColor = Color.magenta;
-                }
+                objectInView.GetComponent<ObjectHandler>().LookingAtObject();
             }
         }
     }
@@ -357,18 +359,12 @@ public class PlayerController : MonoBehaviour
             maxDragDistance = Mathf.Clamp(maxDragDistance, minDragDistance, float.MaxValue);
         }
 
-    void HandleDeletingObjects()            // This used to just destroy the object, but once I introduced saving, objects needed to be kept alive
+    public void HandleDeletingObjects()            // This used to just destroy the object, but once I introduced saving, objects needed to be kept alive
     {
-        // Disable the selected object when the Delete key is pressed
-        if (Input.GetKeyDown(KeyCode.Delete) && selectedObject != null)
-        {
-            selectedObject.SetActive(false);
-            selectedObject = null; // Clear the selected object
-        }
+        selectedObject.SetActive(false);
+        selectedObject = null; // Clear the selected object
+        
     }
-
-
-
 
     void HandleObjectRotation()
         {
@@ -417,24 +413,26 @@ public class PlayerController : MonoBehaviour
         Cursor.visible = true;
     }
 
+    /*                                                          // Left this in as a reminder, having keybindings is incompatible with naming objects
     void MenuButtonInput()
     {
-        if (Input.GetKeyDown(KeyCode.U))
-        {
-            menuController.SpawnCube();
-        }
-
         if (Input.GetKeyDown(KeyCode.C) && selectedObject != null)
         {
             // Save the current selected object to the Spawn list
             menuController.SaveObject();
         }
 
-        if (Input.GetKeyDown(KeyCode.V))
+        if (Input.GetKeyDown(KeyCode.R))
         {
-            // Call the public function in MenuController to spawn the saved selected object
-            menuController.SpawnSavedObject(selectedObject);
+            // Call the public function in MenuController to lock the selectedObject's rotation
+            menuController.ToggleRotationLock();
+        }
+
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            menuController.ToggleTime();
         }
     }
+    */
 }
 
