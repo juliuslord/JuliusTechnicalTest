@@ -4,28 +4,23 @@ using UnityEngine;
 
 public class ObjectHandler : MonoBehaviour
 {
-    private PlayerController playerController; // Reference to the PlayerController script
-
-    private Collider _collider;
-    private Outline outline;
-    private Rigidbody rb;
-
-    public bool isSelected = false;
+    public bool isSelected = false;     // For controlling outlines
     public bool beingViewed = false;
 
     public bool gridSnapping = false; // By default, gridSnapping is off
 
+    private PlayerController playerController;
+    private Collider _collider;
+    private Outline outline;
+    private Rigidbody rb;
+
     // Start is called before the first frame update
     void Start()
     {
-        // Get the collider component attached to the GameObject
         _collider = GetComponent<Collider>();
-
-        // Find the PlayerController script on the player object
-        playerController = FindObjectOfType<PlayerController>();
-
-        // Get the Rigidbody component attached to the GameObject
         rb = GetComponent<Rigidbody>();
+
+        playerController = FindObjectOfType<PlayerController>();
     }
 
     void Awake()
@@ -45,6 +40,21 @@ public class ObjectHandler : MonoBehaviour
     {
         DestroyOnFall();        // If an object falls below a certain Y, it is removed from the game
 
+        OutlineControl();       // Controlling when to give an outline and what colour
+
+        // Check if gridSnapping is enabled
+        if (gridSnapping)
+        {
+            // Snap the object to the closest integer x, y, and z positions
+            if (rb != null && rb.velocity.magnitude < 0.5f)
+            {
+                SnapToGrid();
+            }
+        }
+    }
+
+    private void OutlineControl()
+    {
         if (isSelected)
         {
             // Turn on outline when selected
@@ -76,19 +86,9 @@ public class ObjectHandler : MonoBehaviour
                 outline.enabled = false;
             }
         }
-
-        // Check if gridSnapping is enabled
-        if (gridSnapping)
-        {
-            // Snap the object to the closest integer x, y, and z positions
-            if (rb != null && rb.velocity.magnitude < 0.5f)
-            {
-                SnapToGrid();
-            }
-        }
     }
 
-    public void TurnOffCollider()
+    public void TurnOffCollider()   // When being dragged by the player
     {
         // Turn off the collider
         if (_collider != null)
@@ -97,7 +97,7 @@ public class ObjectHandler : MonoBehaviour
         }
     }
 
-    public void TurnOnCollider()
+    public void TurnOnCollider()    // When released from dragging
     {
         // Turn on the collider
         if (_collider != null)
@@ -137,13 +137,13 @@ public class ObjectHandler : MonoBehaviour
         beingViewed = true;
     }
 
-    // Function to handle outline when being viewed
+    // Function to handle outline when not being viewed
     public void NotLookingAtObject()
     {
         beingViewed = false;
     }
 
-    private void SnapToGrid()
+    private void SnapToGrid()   // For gridsnapping
     {
         Vector3 newPosition = new Vector3(
             Mathf.Round(transform.position.x),
@@ -160,7 +160,8 @@ public class ObjectHandler : MonoBehaviour
         gridSnapping = !gridSnapping;
     }
 
-    void MergeObjects(GameObject otherObject)
+    /*                                                          // This is my failed attempt at fusing objects together when they touched, in a lego fashion so theyd move together
+    void MergeObjects(GameObject otherObject)                   // As one big object
     {
         // Calculate the relative position and rotation of the other object
         Vector3 relativePosition = otherObject.transform.position - transform.position;
@@ -180,5 +181,5 @@ public class ObjectHandler : MonoBehaviour
             otherRigidbody.isKinematic = true;
         }
     }
-
+    */
 }

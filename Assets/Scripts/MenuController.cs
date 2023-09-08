@@ -5,17 +5,17 @@ using UnityEngine.UI;
 
 public class MenuController : MonoBehaviour
 {
-    private PlayerController playerController; // Reference to the PlayerController script
+    private PlayerController playerController;
     public GameObject menuObject; // Reference to the parent menu object
 
     public List<GameObject> savedObjects = new List<GameObject>(); // List to store saved objects
-    public ScrollRect scrollView; // Reference to the scroll view
+    public ScrollRect scrollView; // Reference to the saved object scroll view
     public Transform scrollViewContent; // Reference to the content of the object scroll view
     public GameObject listButtonPrefab; // Reference to the button prefab
 
     public InputField selectedObjectInput; // Reference to the name above the view of the selected object
 
-    public VirtualViewer virtualViewer;
+    public VirtualViewer virtualViewer; // Reference to the selected object image generator
 
     [Header("Position")]
     public Text XText; // Text for displaying the X position
@@ -38,17 +38,17 @@ public class MenuController : MonoBehaviour
     [Header("Material Replacement")]
     public Material redMaterial;
     public Material orangeMaterial;
-    public Material yellowMaterial;         // Materials for the Primary and Secondary colours
+    public Material yellowMaterial;         // Materials in the Primary & Secondary colours
     public Material greenMaterial;
     public Material blueMaterial;
     public Material purpleMaterial;
-    public Material blackMaterial;
+    public Material blackMaterial;          // I only added these for the chess board
     public Material whiteMaterial;
 
     [Header("Physics Materials")]
     public PhysicMaterial[] availableMaterials; // Array of available PhysicMaterials
-    public Dropdown materialDropdown;
-    public Text physMaterialText;
+    public Dropdown materialDropdown;   // Reference to the dropdown input for physics material
+    public Text physMaterialText;       // Reference to the text above
 
     // Boolean to track whether time is paused or not
     public bool timePaused = false;
@@ -62,33 +62,18 @@ public class MenuController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        // Ensure that the menuObject reference is set in the Unity Editor
-        if (menuObject == null)
-        {
-            Debug.LogError("Menu Object reference is not set!");
-        }
-        else
-        {
-            // Initially, make sure the menu is inactive
-            menuObject.SetActive(false);
-        }
-
+        // Initially, make sure the menu is inactive
+        menuObject.SetActive(false);
+       
         // Find the PlayerController script on the player object
         playerController = FindObjectOfType<PlayerController>();
 
         // Call PopulateScrollView to populate it initially
         PopulateScrollView();
 
-        // Ensure that the materialDropdown reference is set in the Unity Editor
-        if (materialDropdown == null)
-        {
-            Debug.LogError("Material Dropdown reference is not set!");
-        }
-        else
-        {
-            // Attach the MaterialSelectionChanged function to the Dropdown's OnValueChanged event
-            materialDropdown.onValueChanged.AddListener(MaterialSelectionChanged);
-        }
+        // Attach the MaterialSelectionChanged function to the Dropdown's OnValueChanged event
+        materialDropdown.onValueChanged.AddListener(MaterialSelectionChanged);
+        
 
         // An event listener to the selectedObjectInput's "End Edit" event
         if (selectedObjectInput != null)
@@ -111,16 +96,17 @@ public class MenuController : MonoBehaviour
             PopulateScrollView();
         }
 
-        TimeControl();
+        TimeControl();  // Ensures time is correct based on the bool
 
-        UpdateSelectedObjectPosition();
+        UpdateSelectedObjectPosition(); // Always update the text, why not, looks cool
+                                        // Scale update isnt here as it only makes occasional changes
     }
 
     public void ActivateMenu()
     {
         // Activate the menu object
         menuObject.SetActive(true);
-        controlText.gameObject.SetActive(false);
+        controlText.gameObject.SetActive(false);    // And deactivate the main controls
     }
 
     public void DeactivateMenu()
@@ -152,7 +138,7 @@ public class MenuController : MonoBehaviour
 
         if (Physics.Raycast(ray, out hit))
         {
-            Vector3 spawnPosition = hit.point + new Vector3(0, 1, 0);
+            Vector3 spawnPosition = hit.point + new Vector3(0, 1, 0);   // So objects dont spawn mostly in the ground
 
             Quaternion spawnRotation = Quaternion.identity; // No rotation
 
@@ -161,10 +147,6 @@ public class MenuController : MonoBehaviour
 
             // Enable the spawned object (in case the original has been 'deleted')
             spawnedObject.SetActive(true);
-        }
-        else
-        {
-            Debug.LogError("No valid spawn location found.");
         }
     }
 
@@ -209,7 +191,6 @@ public class MenuController : MonoBehaviour
 
         virtualViewer.SpawnObject();    // Set up the virtual viewer for the selected object UI
 
-        UpdateSelectedObjectPosition(); // Update position text
         UpdateSelectedObjectScale();    // Update scale text
     }
 
@@ -250,11 +231,10 @@ public class MenuController : MonoBehaviour
             newPosition.z += incrementZ;
 
             playerController.selectedObject.transform.position = newPosition;
-            UpdateSelectedObjectPosition();
         }
     }
 
-    public void DecreasePosition()      // For Position Plus button
+    public void DecreasePosition()      // For Position Minus button
     {
         if (playerController.selectedObject != null && xInputField != null && yInputField != null && zInputField != null)
         {
@@ -268,7 +248,6 @@ public class MenuController : MonoBehaviour
             newPosition.z -= decrementZ;
 
             playerController.selectedObject.transform.position = newPosition;
-            UpdateSelectedObjectPosition();
         }
     }
 
@@ -294,7 +273,7 @@ public class MenuController : MonoBehaviour
         }
     }
 
-    public void IncreaseScale()
+    public void IncreaseScale()     // For Scale Plus button
     {
         if (playerController.selectedObject != null && xScaleInputField != null && yScaleInputField != null && zScaleInputField != null)
         {
@@ -317,7 +296,7 @@ public class MenuController : MonoBehaviour
         }
     }
 
-    public void DecreaseScale()
+    public void DecreaseScale()     // For Scale Minus button
     {
         if (playerController.selectedObject != null && xScaleInputField != null && yScaleInputField != null && zScaleInputField != null)
         {
@@ -340,7 +319,7 @@ public class MenuController : MonoBehaviour
         }
     }
 
-    // Material replacement functions
+    // Material replacement functions for buttons
     public void ReplaceMaterialRed()
     {
         ReplaceMaterial(redMaterial);
@@ -381,7 +360,7 @@ public class MenuController : MonoBehaviour
         ReplaceMaterial(whiteMaterial);
     }
 
-    private void ReplaceMaterial(Material material)
+    private void ReplaceMaterial(Material material)     // The function for changing the material of the selected object
     {
         if (playerController.selectedObject != null)
         {
@@ -405,12 +384,7 @@ public class MenuController : MonoBehaviour
                 renderer.materials = updatedMaterials.ToArray();
             }
 
-            else
-            {
-                Debug.LogWarning("Selected object has no Renderer component or materials.");
-            }
-
-            NewSelectedObject();
+            NewSelectedObject();       // Resets so everything has correct values
         }
 
         else
@@ -464,13 +438,9 @@ public class MenuController : MonoBehaviour
                 collider.material = physicsMaterial;
             }
         }
-        else
-        {
-            Debug.LogWarning("No object selected to apply the material to.");
-        }
     }
 
-    // Function to update the Dropdown options and selection based on the selectedObject's material
+    // Function to update the Dropdown options and selection based on the selectedObject's material         FUNCTIONAL BUT NOT AS INTENDED
     public void UpdateDropdownOptionsAndSelection()
     {
         if (playerController.selectedObject != null)
@@ -485,7 +455,7 @@ public class MenuController : MonoBehaviour
                 Dropdown.OptionData option = new Dropdown.OptionData();
                 option.text = availableMaterials[i].name;
                 options.Add(option);
-            }
+            }                                                   // I dont think this works, it doesnt update the dropdown to mirror the selected physics material as I intended 
 
             materialDropdown.options = options;
 
@@ -505,25 +475,17 @@ public class MenuController : MonoBehaviour
         {
             if (selectedIndex >= 0 && selectedIndex < availableMaterials.Length)
             {
-                ApplyPhysicsMaterial(playerController.selectedObject, availableMaterials[selectedIndex]);
+                ApplyPhysicsMaterial(playerController.selectedObject, availableMaterials[selectedIndex]);   // Applies the correct material 
                 
-                PhysicMaterial currentMaterial = playerController.selectedObject.GetComponent<Collider>().material;
+                PhysicMaterial currentMaterial = playerController.selectedObject.GetComponent<Collider>().material; // For the text
 
-                physMaterialText.text = "Current material: " + currentMaterial.name;
+                physMaterialText.text = "Current material: " + currentMaterial.name;    // The text above the dropdown
             
             }
-            else
-            {
-                Debug.LogWarning("Invalid material selection.");
-            }
-        }
-        else
-        {
-            Debug.LogWarning("No object selected to apply the material to.");
         }
     }
 
-    public void QuitGame()
+    public void QuitGame()      // For Quit button
     {
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
@@ -532,7 +494,7 @@ public class MenuController : MonoBehaviour
 #endif
     }
 
-    public void RestartScene()
+    public void RestartScene()      // For Restart button
     {
         UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
     }
@@ -554,7 +516,7 @@ public class MenuController : MonoBehaviour
         }
     }
 
-    private void TimeControl()        // This is a cheatsy way of making it seem like time is paused
+    private void TimeControl()        // This is a cheatsy way of making it seem like time is paused, makes all objects lose their physics
     {
         // Iterate through all objects with ObjectHandler script in the scene
         ObjectHandler[] objectHandlers = FindObjectsOfType<ObjectHandler>();
@@ -570,8 +532,8 @@ public class MenuController : MonoBehaviour
         }
     }
 
-    // Reset the rotation of the selectedObject to identity
-    public void ResetSelectedObjectRotation()
+    // Reset the rotation of the selectedObject to (0, 0, 0)
+    public void ResetSelectedObjectRotation()       // For the button
     {
         if (playerController.selectedObject != null)
         {
@@ -579,14 +541,14 @@ public class MenuController : MonoBehaviour
         }
     }
 
-    // Public function to toggle fullscreen mode
-    public void ToggleFullscreen()
+    // To toggle fullscreen mode
+    public void ToggleFullscreen()      // For the button
     {
         // Toggle fullscreen mode
         Screen.fullScreen = !Screen.fullScreen;
     }
 
-    // Function to update and show text for a specified duration
+    // Update and show text for a specified duration
     public void ShowInfoText(string newText)
     {
         // Update the text with the provided string
@@ -608,7 +570,7 @@ public class MenuController : MonoBehaviour
         infoText.enabled = false;
     }
 
-    public void HandlingGridSnap()
+    public void HandlingGridSnap()  // For the button
     {
         playerController.selectedObject.GetComponent<ObjectHandler>().ToggleGridSnapping();
 
@@ -623,7 +585,7 @@ public class MenuController : MonoBehaviour
         }
     }
 
-    public void ToggleGravity()
+    public void ToggleGravity() // For the button
     {
         if (playerController.selectedObject != null)
         {

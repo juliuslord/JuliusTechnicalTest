@@ -6,6 +6,7 @@ using UnityEngine.EventSystems;
 
 public class PlayerController : MonoBehaviour
 {
+    // Player states to determine behavior
     public enum PlayerState
     {
         Walking,
@@ -13,37 +14,34 @@ public class PlayerController : MonoBehaviour
         InMenu
     }
 
-    public PlayerState currentState = PlayerState.Walking;  // Initially set to Walking
+    public PlayerState currentState = PlayerState.Walking; // Current player state
 
     [Header("Movement")]
-    public float walkSpeed = 5.0f;
-    public float flySpeed = 10.0f;
-    public float rotationSpeed = 2.0f;
-    public float maxVerticalRotation = 80.0f;
+    public float walkSpeed = 5.0f;        // Walking speed
+    public float flySpeed = 10.0f;        // Flying speed
+    public float rotationSpeed = 2.0f;    // Rotation speed
+    public float maxVerticalRotation = 80.0f; // Max vertical camera rotation
+
+    // Variables for object manipulation
     private Vector3 flyingVelocity = Vector3.zero;
     private float verticalRotation = 0;
-
     private CharacterController characterController;
     private PlayerState previousState = PlayerState.Walking;
-
     public MenuController menuController;
-
     public GameObject selectedObject;
-
-    private Vector3 offset; // Offset between the mouse cursor and the selected object
-    public float maxDragDistance = 10.0f; // Maximum distance the object can be dragged from the player
-    private float minDragDistance = 1.0f; // Minimum allowed drag distance
-    private bool isDragging = false; // Flag to track if dragging is in progress
-
-    private bool isRotating = false;
+    private Vector3 offset;             // Offset between cursor and selected object
+    public float maxDragDistance = 10.0f; // Max object drag distance from the player
+    private float minDragDistance = 1.0f; // Min allowed drag distance
+    private bool isDragging = false;     // Flag for object dragging
+    private bool isRotating = false;     // Flag for object rotation
     private Vector3 initialMousePosition;
-    
-    public float objRotationSpeed = 1.0f; // Adjust the rotation speed for larger rotations
+    public float objRotationSpeed = 1.0f; // Object rotation speed
 
 
     void Start()
     {
         characterController = GetComponent<CharacterController>();
+
         // Lock the cursor to the center of the screen
         Cursor.lockState = CursorLockMode.Locked;
 
@@ -165,61 +163,39 @@ public class PlayerController : MonoBehaviour
 
             // Set flyingVelocity directly to the moveDirection
             flyingVelocity = moveDirection.normalized * flySpeed * speedMultiplier;
-
-            // Debug the flyingVelocity
-            // Debug.Log("Flying Velocity: " + flyingVelocity);
         }
     }
 
     void HandleStateChangeInput()
     {
-        // Toggle between walking and flying states with the Space key
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            if (currentState == PlayerState.Walking)
-            {
-                currentState = PlayerState.Flying;
-            }
-            else if (currentState == PlayerState.Flying)
-            {
-                currentState = PlayerState.Walking;
-            }
+            currentState = (currentState == PlayerState.Walking) ? PlayerState.Flying : PlayerState.Walking;
         }
 
-        // Change to InMenu state and save the current state as previousState
-        if (currentState == PlayerState.Walking || currentState == PlayerState.Flying)
+        if ((currentState == PlayerState.Walking || currentState == PlayerState.Flying) && Input.GetKeyDown(KeyCode.Escape))
         {
-            if (Input.GetKeyDown(KeyCode.Escape))
-            {
-                previousState = currentState;
-                currentState = PlayerState.InMenu;
-            }
+            previousState = currentState;
+            currentState = PlayerState.InMenu;
         }
-        // Change back to the previous state from InMenu state
-        else if (currentState == PlayerState.InMenu)
+        else if (currentState == PlayerState.InMenu && Input.GetKeyDown(KeyCode.Escape))
         {
-            if (Input.GetKeyDown(KeyCode.Escape))
-            {
-                currentState = previousState;
-            }
+            currentState = previousState;
         }
     }
 
-    // Sight handling function
+    // Handle object selection and interaction
     void SightHandler()
     {
-        // Raycast from the camera
         Ray ray;
 
-        // Cast a ray from the camera to the mouse cursor position in the "InMenu" state
         if (currentState == PlayerState.InMenu)
         {
             ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         }
 
-        else
+        else    // Flying and Walking
         {
-            // Cast a ray from the camera to the center of the screen in "Walking" and "Flying" states
             ray = Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2, 0));
         }
 
@@ -230,7 +206,7 @@ public class PlayerController : MonoBehaviour
 
         if (Physics.Raycast(ray, out hit))
         {
-            // Draw a debug line (laser) from the camera to the hit point
+            // Draw a laser from the camera to the hit point
             Debug.DrawLine(ray.origin, hit.point, Color.red);
 
             // Check if the object has the ObjectHandler script
@@ -240,12 +216,12 @@ public class PlayerController : MonoBehaviour
                 // Set the objectInView to the object the player is looking at
                 objectInView = objectHandler.gameObject;
 
-                // Handle E input to select the object
+                // Handle left click to select the object
                 if (Input.GetMouseButtonDown(0))
                 {
                     if (selectedObject != null)
                     {
-                        selectedObject.GetComponent<ObjectHandler>().DeselectObject();
+                        selectedObject.GetComponent<ObjectHandler>().DeselectObject();  // Deselect previous object
                     }
 
                     // Set the selected object to the one the player is looking at
@@ -260,7 +236,7 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            // Draw a debug line (laser) from the camera into the distance
+            // Draw a laser from the camera into the distance
             Debug.DrawRay(ray.origin, ray.direction * 1000, Color.red);
         }
 
@@ -324,15 +300,6 @@ public class PlayerController : MonoBehaviour
                     newPosition = transform.position + playerToNewPosition.normalized * maxDragDistance;
                 }
 
-                /*
-                // Check if there's an object in view (not looking at infinity)
-                if (selectedObject != null)
-                {
-                    // Adjust the Y position to prevent falling through the floor
-                    newPosition.y += 1.0f; // Increase the Y position by 1
-                }
-                */
-
                 // Update the object's position
                 selectedObject.transform.position = newPosition;
             }
@@ -349,15 +316,14 @@ public class PlayerController : MonoBehaviour
     }
 
 
-        void HandleScrollWheelInput()
-        {
-            // Adjust the maximum drag distance using the scroll wheel
-            float scrollDelta = Input.GetAxis("Mouse ScrollWheel");
-            maxDragDistance += scrollDelta;
+    void HandleScrollWheelInput()  // Adjust the maximum drag distance using the scroll wheel
+    {
+        float scrollDelta = Input.GetAxis("Mouse ScrollWheel");
+        maxDragDistance += scrollDelta;
 
-            // Ensure the maximum drag distance stays within the defined limits
-            maxDragDistance = Mathf.Clamp(maxDragDistance, minDragDistance, float.MaxValue);
-        }
+        // Ensure the maximum drag distance stays within the defined limits
+        maxDragDistance = Mathf.Clamp(maxDragDistance, minDragDistance, float.MaxValue);
+    }
 
     public void HandleDeletingObjects()            // This used to just destroy the object, but once I introduced saving, objects needed to be kept alive
     {
@@ -366,18 +332,17 @@ public class PlayerController : MonoBehaviour
         
     }
 
-    void HandleObjectRotation()
+    void HandleObjectRotation()     // Rotate the object when the player holds right click
         {
             if (selectedObject != null)
             {
-                // Cast a ray from the camera to the selected object
                 Ray rayToSelectedObject = Camera.main.ScreenPointToRay(Input.mousePosition);
                 RaycastHit hit;
 
                 // Check if the ray intersects with the selected object
                 if (Physics.Raycast(rayToSelectedObject, out hit) && hit.collider.gameObject == selectedObject)
                 {
-                    // Start rotating the object when right mouse button is pressed
+                    // Start rotating the object when right mouse button is held
                     if (Input.GetMouseButtonDown(1))
                     {
                         isRotating = true;
